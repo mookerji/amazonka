@@ -32,15 +32,16 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Resource
 import           Data.Aeson
 import           Data.Bifunctor
-import qualified Data.ByteString.Lazy         as LBS
+import qualified Data.ByteString.Lazy           as LBS
 import           Data.Conduit
-import qualified Data.Conduit.Binary          as Conduit
+import qualified Data.Conduit.Binary            as Conduit
 import           Data.Monoid
-import           Network.AWS.Data             (LazyByteString, FromXML(..), decodeXML, build)
+import           Network.AWS.Data               (LazyByteString, FromXML(..), decodeXML, build)
+import           Network.AWS.Data.Internal.JSON
 import           Network.AWS.Types
-import           Network.HTTP.Client          hiding (Request, Response)
+import           Network.HTTP.Client            hiding (Request, Response)
 import           Network.HTTP.Types
-import           Text.XML                     (Node)
+import           Text.XML                       (Node)
 
 nullResponse :: (MonadResource m, AWSService (Sv a))
              => Rs a
@@ -114,7 +115,7 @@ deserialise :: (AWSService (Sv a), MonadResource m)
             -> m (Response' a)
 deserialise g f l = receive $ \a hs bdy -> do
     lbs <- sinkLbs bdy
-    liftIO $ l Trace ("[Client Response Body]\n" <> build lbs)
+    liftIO $ l Trace ("[Client Response Body]\n" <> (build $ pprint lbs))
     return $! case g lbs of
         Left  e -> Left (SerializerError a e)
         Right o ->

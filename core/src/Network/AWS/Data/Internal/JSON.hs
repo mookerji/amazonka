@@ -16,6 +16,7 @@ module Network.AWS.Data.Internal.JSON
       FromJSON (..)
     , parseJSONText
     , eitherDecode'
+    , pprint
     -- ** Parser a
     , withObject
     , (.:)
@@ -32,11 +33,22 @@ module Network.AWS.Data.Internal.JSON
     , (.=)
     ) where
 
-import           Data.Aeson                     (eitherDecode')
+import           Data.Aeson                           (eitherDecode', json)
+import           Data.Aeson.Encode.Pretty             (encodePretty', defConfig)
 import           Data.Aeson.Types
-import qualified Data.HashMap.Strict            as Map
-import           Data.Text                      (Text)
+import qualified Data.Attoparsec.ByteString.Lazy      as ABS
+import qualified Data.HashMap.Strict                  as Map
+import           Data.Text                            (Text)
+import           Network.AWS.Data.Internal.ByteString
 import           Network.AWS.Data.Internal.Text
+
+-- | Return pretty printed LBS if parseable JSON, otherwise return
+-- original LBS.
+--
+pprint :: LazyByteString -> LazyByteString
+pprint lbs = either (const lbs)
+                    (encodePretty' defConfig)
+                    (ABS.eitherResult $ ABS.parse json lbs)
 
 parseJSONText :: FromText a => String -> Value -> Parser a
 parseJSONText n = withText n (either fail return . fromText)
